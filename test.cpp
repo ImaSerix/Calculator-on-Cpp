@@ -9,7 +9,8 @@ struct Number{
 using namespace std;
 
 int main (){
-    string s;
-    cout << typeid(s).name();
+    int i1 = 4;
+    int* i2 = &i1;
+    int** i3 = &i2;
     return 0;
 }
