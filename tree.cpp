@@ -8,7 +8,6 @@ class Calculator{
     private:
         enum class Operator {
             Add,
-            Subtract,
             Multiply,
             Divide,
             NotAnOperator
@@ -113,13 +112,12 @@ class Calculator{
         };
         static Operator makeOperator(const char &operation){
             if (operation == '+') return Operator::Add;
-            else if (operation == '-') return Operator::Subtract;
             else if (operation == '*') return Operator::Multiply;
             else if (operation == '/') return Operator::Divide;
             else throw invalid_argument("Wron operation " + operation);
         }
         static bool shoulBeHigher(const Operator &first, const Operator &second){
-            if ((first == Operator::Add || first == Operator::Subtract) && (second == Operator::Multiply || second == Operator::Divide)) return true;
+            if (first == Operator::Add && (second == Operator::Multiply || second == Operator::Divide)) return true;
             if ((first == Operator::Multiply || first == Operator::Divide) && (second == Operator::Multiply || second == Operator::Divide)) return true;
             return false;
         }
@@ -128,9 +126,6 @@ class Calculator{
             {
             case Operator::Add:
                 return first + second;
-                break;
-            case Operator::Subtract:
-                return first - second;
                 break;
             case Operator::Multiply:
                 return first * second;
@@ -149,9 +144,6 @@ class Calculator{
             {
             case Operator::Add:
                 return '+';
-                break;
-            case Operator::Subtract:
-                return '-';
                 break;
             case Operator::Multiply:
                 return '*';
@@ -174,6 +166,11 @@ class Calculator{
                     ss.putback(ch); 
                     double number;
                     ss >> number;
+                    if (!tokens.empty() && tokens.back().op == '-'){
+                        if (tokens.size() == 1) tokens.pop_back();
+                        else tokens.back().op = '+';
+                        number *= -1;
+                    }
                     tokens.push_back(Token{Token::Number, number, 0});
                 }
                 else if (OPERATORS.find(ch) != string::npos) tokens.push_back(Token{Token::Operator, 0, ch});
@@ -187,6 +184,7 @@ class Calculator{
             vector<Token> tokens = parseExpression(s);
             vector<Token>::const_iterator begin = tokens.begin();
             Tree* evTree = makeTreeFromTokens(begin, tokens.end());
+            evTree->print();
             return evTree->evaluate();
         }
         static Tree* makeTreeFromTokens(vector<Token>::const_iterator &begin, vector<Token>::const_iterator end){
