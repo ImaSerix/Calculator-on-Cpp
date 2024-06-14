@@ -6,7 +6,6 @@
 using namespace std;
 class Calculator{
     private:
-        const string OPERATORS = "+-*/";
         enum class Operator {
             Add,
             Subtract,
@@ -88,6 +87,10 @@ class Calculator{
                         else target = target->rightNode = temp = new OperatorNode(operation, target, target->rightNode);
                     }
                 }
+                void push(Tree* &subTree){
+                    if (target == nullptr) entr = subTree->entr;
+                    else target->rightNode = subTree->entr;
+                }
                 double evaluate() const { return entr->evaluate(); }
                 void print () const { entr->print(); }
                 void delFollowing(Node* n){
@@ -108,14 +111,16 @@ class Calculator{
                     clear();
                 }
         };
-        static Operator makeOperator(const string &operation){
-            if (operation == "+") return Operator::Add;
-            if (operation == "-") return Operator::Subtract;
-            if (operation == "*") return Operator::Multiply;
-            if (operation == "/") return Operator::Divide;
+        static Operator makeOperator(const char &operation){
+            if (operation == '+') return Operator::Add;
+            else if (operation == '-') return Operator::Subtract;
+            else if (operation == '*') return Operator::Multiply;
+            else if (operation == '/') return Operator::Divide;
+            else throw invalid_argument("Wron operation " + operation);
         }
         static bool shoulBeHigher(const Operator &first, const Operator &second){
-            if ((first == Operator::Add || first == Operator::Subtract) && (second == Operator::Multiply || second ==Operator::Divide)) return true;
+            if ((first == Operator::Add || first == Operator::Subtract) && (second == Operator::Multiply || second == Operator::Divide)) return true;
+            if ((first == Operator::Multiply || first == Operator::Divide) && (second == Operator::Multiply || second == Operator::Divide)) return true;
             return false;
         }
         static double calculate(const Operator &op, const double &first, const double &second){
@@ -139,27 +144,28 @@ class Calculator{
                 break;
             }
         }
-        static string getOperator(const Operator &op){
+        static char getOperator(const Operator &op){
             switch (op)
             {
             case Operator::Add:
-                return "+";
+                return '+';
                 break;
             case Operator::Subtract:
-                return "-";
+                return '-';
                 break;
             case Operator::Multiply:
-                return "*";
+                return '*';
                 break;
             case Operator::Divide:
-                return "/";
+                return '/';
                 break;
             default:
-                return "?";
+                return '?';
                 break;
             }
         }
         static vector<Token> parseExpression(const string &expression){
+            const string OPERATORS = "+-*/";
             vector<Token> tokens;
             stringstream ss(expression);
             char ch;
@@ -170,30 +176,59 @@ class Calculator{
                     ss >> number;
                     tokens.push_back(Token{Token::Number, number, 0});
                 }
-                else if (Calculator::OPERATORS.find(ch) != string::npos) tokens.push_back(Token{Token::Operator, 0, ch});
+                else if (OPERATORS.find(ch) != string::npos) tokens.push_back(Token{Token::Operator, 0, ch});
                 else if (ch == '(') tokens.push_back(Token{Token::startOfSubExer, 0, ch});
                 else if (ch == ')') tokens.push_back(Token{Token::endOfSubExer, 0, ch});
                 else throw runtime_error("Wrong token = " + ch);
             }
             return tokens;
         }
-        static double evaluateExpression(const string &s){
+        static double evaluateExpression(const string s){
             vector<Token> tokens = parseExpression(s);
-
+            vector<Token>::const_iterator begin = tokens.begin();
+            Tree* evTree = makeTreeFromTokens(begin, tokens.end());
+            return evTree->evaluate();
         }
-        static Tree* makeTreeFromTokens(vector<Token> &tokens){
-            return nullptr;
-        }
-        static double evaluateTree(Tree* tree){
-
+        static Tree* makeTreeFromTokens(vector<Token>::const_iterator &begin, vector<Token>::const_iterator end){
+            Tree* evTree = new Tree();
+            if (begin == end) throw invalid_argument("No tokens in the list");
+            else if ((*begin).type == Calculator::Token::Operator) throw invalid_argument("First token should be number or (");
+            else {
+                bool ok = true;
+                Token t;
+                while ((begin != end) && ok){
+                    t = *begin;
+                    switch (t.type)
+                    {
+                    case Calculator::Token::Number:
+                        evTree->push(t.num);
+                        break;
+                    case Calculator::Token::Operator:
+                        evTree->push(makeOperator(t.op));
+                        break;
+                    case Calculator::Token::startOfSubExer:{
+                        Tree* subTree = new Tree();
+                        subTree = makeTreeFromTokens(++begin, end);
+                        evTree->push(subTree);
+                        if (begin == end) ok = false;
+                        }break;
+                    case Calculator::Token::endOfSubExer:
+                        ok = false;
+                        break;
+                    default:
+                        break;
+                    }
+                    if (ok) ++begin;
+                }
+            }
+            return evTree;
         }
 };
 
-
-
-
-
 int main(){
-
+    cout << "Input expression = "<< endl;
+    string expression;
+    cin >> expression;
+    cout << Calculator::evaluateExpression(expression);
     return 0;
 }
