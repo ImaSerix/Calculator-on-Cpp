@@ -1,3 +1,10 @@
+/*
+Uzrakstīt programmu, kura ļauj uzbūvēt koku patvaļīgai aritmētiskajai izteiksmei (atbalstītie operatori “+,-,/,*” un iekavas). 
+Izteiksme uzdodas parastajā formā, piem, -10 + 3 * (4 - 6). Programmai jāatrisina izteiksmi, izmantojot koku. 
+*/
+
+
+
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -8,6 +15,7 @@ class Calculator{
     private:
         enum class Operator {
             Add,
+            Subtraction,
             Multiply,
             Divide,
             NotAnOperator
@@ -17,7 +25,6 @@ class Calculator{
             double num;
             char op;
         };
-    public:
         class Tree{
             private:
                 class Node{
@@ -110,22 +117,26 @@ class Calculator{
                     clear();
                 }
         };
+    public:
         static Operator makeOperator(const char &operation){
             if (operation == '+') return Operator::Add;
+            else if (operation == '-') return Operator::Subtraction;
             else if (operation == '*') return Operator::Multiply;
             else if (operation == '/') return Operator::Divide;
-            else throw invalid_argument("Wron operation " + operation);
+            else throw invalid_argument("Wrong operation " + operation);
         }
         static bool shoulBeHigher(const Operator &first, const Operator &second){
-            if (first == Operator::Add && (second == Operator::Multiply || second == Operator::Divide)) return true;
-            if ((first == Operator::Multiply || first == Operator::Divide) && (second == Operator::Multiply || second == Operator::Divide)) return true;
-            return false;
+            if ((first == Operator::Multiply || first == Operator::Divide) && (second == Operator::Add || second == Operator::Subtraction)) return false;
+            return true;
         }
         static double calculate(const Operator &op, const double &first, const double &second){
             switch (op)
             {
             case Operator::Add:
                 return first + second;
+                break;
+            case Operator::Subtraction:
+                return first - second;
                 break;
             case Operator::Multiply:
                 return first * second;
@@ -145,6 +156,9 @@ class Calculator{
             case Operator::Add:
                 return '+';
                 break;
+            case Operator::Subtraction:
+                return '-';
+                break;
             case Operator::Multiply:
                 return '*';
                 break;
@@ -161,19 +175,26 @@ class Calculator{
             vector<Token> tokens;
             stringstream ss(expression);
             char ch;
+            bool nextNegative = false;
             while (ss >> ch){
+                if (isspace(ch)) continue;
                 if (isdigit(ch)||ch == '.'){
                     ss.putback(ch); 
                     double number;
                     ss >> number;
-                    if (!tokens.empty() && tokens.back().op == '-'){
-                        if (tokens.size() == 1) tokens.pop_back();
-                        else tokens.back().op = '+';
+                    if (tokens.size() == 1 && tokens.back().type == Token::Operator) throw runtime_error("Invalid first token");
+                    if (nextNegative){
                         number *= -1;
+                        nextNegative = false;
                     }
                     tokens.push_back(Token{Token::Number, number, 0});
                 }
-                else if (OPERATORS.find(ch) != string::npos) tokens.push_back(Token{Token::Operator, 0, ch});
+                else if (OPERATORS.find(ch) != string::npos) {
+                    if (!tokens.empty() && tokens.back().type == Token::Operator && ch == '-') {nextNegative = true; ch = '+';}
+                    if (tokens.empty() && ch == '-') nextNegative = true;
+                    if (!tokens.empty() && tokens.back().type != Token::Operator) tokens.push_back(Token{Token::Operator, 0, ch});
+                    else if (!tokens.empty() && tokens.back().type != Token::Number && ch != '+') throw runtime_error ("Using several operator tokens in a row is not allowed");
+                }
                 else if (ch == '(') tokens.push_back(Token{Token::startOfSubExer, 0, ch});
                 else if (ch == ')') tokens.push_back(Token{Token::endOfSubExer, 0, ch});
                 else throw runtime_error("Wrong token = " + ch);
@@ -184,7 +205,6 @@ class Calculator{
             vector<Token> tokens = parseExpression(s);
             vector<Token>::const_iterator begin = tokens.begin();
             Tree* evTree = makeTreeFromTokens(begin, tokens.end());
-            evTree->print();
             return evTree->evaluate();
         }
         static Tree* makeTreeFromTokens(vector<Token>::const_iterator &begin, vector<Token>::const_iterator end){
@@ -226,7 +246,7 @@ class Calculator{
 int main(){
     cout << "Input expression = "<< endl;
     string expression;
-    cin >> expression;
+    getline(cin, expression);
     cout << Calculator::evaluateExpression(expression);
     return 0;
 }
