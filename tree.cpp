@@ -190,10 +190,15 @@ class Calculator{
                     tokens.push_back(Token{Token::Number, number, 0});
                 }
                 else if (OPERATORS.find(ch) != string::npos) {
-                    if (!tokens.empty() && tokens.back().type == Token::Operator && ch == '-') {nextNegative = true; ch = '+';}
-                    if (tokens.empty() && ch == '-') nextNegative = true;
+                    // if (!tokens.empty() && tokens.back().type == Token::Operator && ch == '-') nextNegative = true;
+                    // if (tokens.empty() && ch == '-') nextNegative = true;
+                    if (tokens.empty() || !tokens.back().type == Token::startOfSubExer && ch == '-') {
+                        if (nextNegative) throw runtime_error ("Using several operator tokens in a row is not allowed");
+                        nextNegative = true; 
+                        continue;
+                    }
                     if (!tokens.empty() && tokens.back().type != Token::Operator) tokens.push_back(Token{Token::Operator, 0, ch});
-                    else if (!tokens.empty() && tokens.back().type != Token::Number && ch != '+') throw runtime_error ("Using several operator tokens in a row is not allowed");
+                    else if (!tokens.empty() && tokens.back().type == Token::Operator) throw runtime_error ("Using several operator tokens in a row is not allowed");
                 }
                 else if (ch == '(') tokens.push_back(Token{Token::startOfSubExer, 0, ch});
                 else if (ch == ')') tokens.push_back(Token{Token::endOfSubExer, 0, ch});
@@ -205,6 +210,7 @@ class Calculator{
             vector<Token> tokens = parseExpression(s);
             vector<Token>::const_iterator begin = tokens.begin();
             Tree* evTree = makeTreeFromTokens(begin, tokens.end());
+            evTree->print();
             return evTree->evaluate();
         }
         static Tree* makeTreeFromTokens(vector<Token>::const_iterator &begin, vector<Token>::const_iterator end){

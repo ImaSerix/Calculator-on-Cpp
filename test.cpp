@@ -39,7 +39,10 @@ vector<Token> parseExpression(const string &expression){
 }
 
 int main (){
-    string s = "1 \n + 2 + 3 + 4 + 5";
-    vector<Token> tokens = parseExpression(s);
+    string expresion = "-10";
+    double d;
+    stringstream ss(expresion);
+    ss >> d;
+    cout << d;
     return 0;
 }
